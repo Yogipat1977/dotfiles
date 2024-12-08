@@ -1,27 +1,21 @@
 #!/bin/bash
 
-# Paths
-WALLPAPER_DIR="$HOME/Pictures/Wallpapers"  # Path to your wallpaper folder
-HYPRPAPER_CONF="$HOME/.config/hypr/hyprpaper.conf"  # Path to your hyprpaper.conf
+# Directory containing wallpapers
+WALLPAPER_DIR="/home/yogipatel/Pictures/Wallpapers"
 
-# Function to set a new random wallpaper
-set_random_wallpaper() {
-    # Select a random wallpaper
-    WALLPAPER=$(find "$WALLPAPER_DIR" -type f \( -name "*.jpg" -o -name "*.png" \) | shuf -n 1)
-    
-    if [ -z "$WALLPAPER" ]; then
-        echo "No wallpapers found in $WALLPAPER_DIR"
-        exit 1
-    fi
+# Hyprpaper config file
+CONFIG_FILE="/home/yogipatel/dotfiles/.config/hypr/hyprpaper.conf"
 
-    # Update the hyprpaper.conf file with the new wallpaper
-    sed -i "s|^wallpaper =.*,|wallpaper = ,$WALLPAPER|" "$HYPRPAPER_CONF"
+# Select a random wallpaper
+RANDOM_WALLPAPER=$(find "$WALLPAPER_DIR" -type f | shuf -n 1)
 
-    echo "Set wallpaper to: $WALLPAPER"
+# Update the preload line with the new wallpaper path
+sed -i "/^preload = /c\preload = $RANDOM_WALLPAPER" "$CONFIG_FILE"
 
-    # Reload HyprPaper
-    pkill -USR1 hyprpaper
-}
+# Update the wallpaper line with the new wallpaper path, keeping the comma
+sed -i "/^wallpaper = /c\wallpaper = ,$RANDOM_WALLPAPER" "$CONFIG_FILE"
 
-# Run the function
-set_random_wallpaper
+# Restart Hyprpaper to apply the changes
+pkill -USR1 hyprpaper
+pkill hyprpaper
+hyprpaper &
