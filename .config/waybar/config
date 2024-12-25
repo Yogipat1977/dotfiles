@@ -20,7 +20,7 @@
       "format": "{}",
       "max-length": 35,
       "rewrite": {
-        "": "Harsh"
+        "": "Yogi"
       },
       "separate-outputs": true,
     },
