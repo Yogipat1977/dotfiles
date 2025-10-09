@@ -1,140 +1,141 @@
-@import "macchiato.css";
 
-* {
-  font-family: "JetBrainsMono Nerd Font", Roboto, Helvetica, Arial, sans-serif;
-  font-size: 16px;
+@keyframes blink-warning {
+    70% {
+        color: white;
+    }
+
+    to {
+        color: white;
+        background-color: orange;
+    }
 }
+
+@keyframes blink-critical {
+    70% {
+      color: white;
+    }
+
+    to {
+        color: white;
+        background-color: red;
+    }
+}
+
+/* Reset all styles */
+* {
+    border: none;
+    /* border-radius: 0; */
+    min-height: 0;
+    margin: 0px;
+    padding: 0;
+    color: white;
+    background-color: black;
+   /*  font-weight: bold; */
+}
+
 
 window#waybar {
-  background-color: rgba(0, 0, 0, 0);
-  border-radius: 13px;
-  transition-property: background-color;
-  transition-duration: .5s;
+  font-family: MesloLGMDZ Mono Nerd Font;
+  font-size: 14px;
 }
 
-button {
-  /* Use box-shadow instead of border so the text isn't offset */
-  box-shadow: inset 0 -3px transparent;
-  /* Avoid rounded borders under each button name */
-  border: none;
-  border-radius: 0;
-}
-
-/* https://github.com/Alexays/Waybar/wiki/FAQ#the-workspace-buttons-have-a-strange-hover-effect */
-button:hover {
-  background: inherit;
-  box-shadow: inset 0 -3px #ffffff;
-}
-
-/* you can set a style on hover for any module like this */
-#pulseaudio:hover {
-  background-color: @surface2;
-}
-
-#workspaces button {
-  padding: 0 5px;
-  background-color: transparent;
-  color: #ffffff;
-}
-
-
-#workspaces button:hover {
-  background: rgba(0, 0, 0, 0.2);
-}
-
-#workspaces button.focused {
-  background-color: @lavender;
-  box-shadow: inset 0 -3px #ffffff;
-}
-
-#workspaces button.urgent {
-  background-color: #eb4d4b;
-}
-
-#mode {
-  background-color: #64727D;
-  box-shadow: inset 0 -3px #ffffff;
-}
-
-#clock,
+/* Every modules */
 #battery,
+#clock,
+#backlight,
 #cpu,
+#custom-keyboard-layout,
 #memory,
-#temperature,
+#mode,
+#custom-weather,
 #network,
-#pulseaudio {
-  padding: 0 10px;
-}
-
-#pulseaudio {
-  color: @maroon;
-}
-
-#network {
-  color: @yellow;
-}
-
-#temperature {
-  color: @sky;
+#pulseaudio,
+#temperature,
+#tray,
+#idle_inhibitor,
+#window,
+#custom-power,
+#workspaces,
+#custom-media,
+#custom-updates,
+#custom-PBPbattery {
+    padding:0.25rem 0.75rem;
 }
 
 #battery {
-  color: @green;
+    animation-timing-function: linear;
+    animation-iteration-count: infinite;
+    animation-direction: alternate;
 }
 
-#clock {
-  color: @flamingo;
+#battery.warning {
+    color: orange;
 }
 
-#window {
-  color: @rosewater;
+#battery.critical {
+    color: red;
 }
 
-.modules-right,
-.modules-left,
-.modules-center {
-  background-color: @base;
-  border-radius: 15px;
+#battery.warning.discharging {
+    animation-name: blink-warning;
+    animation-duration: 3s;
 }
 
-.modules-right {
-  padding: 0 10px;
+#battery.critical.discharging {
+    animation-name: blink-critical;
+    animation-duration: 2s;
 }
 
-.modules-left {
-  padding: 0 20px;
+#cpu {
+    /* color: #435B66; */
 }
 
-.modules-center {
-  padding: 0 10px;
+#cpu.warning {
+    color: orange;
 }
 
-#battery.charging,
-#battery.plugged {
-  color: @sapphire;
+#cpu.critical {
+    color: red;
 }
 
-@keyframes blink {
-  to {
-    color: #000000;
-  }
+#memory {
+    animation-timing-function: linear;
+    animation-iteration-count: infinite;
+    animation-direction: alternate;
+    /* color: #435B66; */
 }
 
-/* Using steps() instead of linear as a timing function to limit cpu usage */
-#battery.critical:not(.charging) {
-  background-color: #f53c3c;
-  color: #ffffff;
-  animation-name: blink;
-  animation-duration: 0.5s;
-  animation-timing-function: steps(12);
-  animation-iteration-count: infinite;
-  animation-direction: alternate;
+#memory.warning {
+    color: orange;
+ }
+
+#memory.critical {
+    color: red;
+    animation-name: blink-critical;
+    animation-duration: 2s;
+    padding-left:5px;
+    padding-right:5px;
 }
 
-label:focus {
-  background-color: #000000;
+#workspaces {
+    font-size:18px;
+    background-color: rgba(0,0,0,0.8);
+    border-radius: 20px;
 }
 
-#pulseaudio.muted {
-  color: @text;
+#workspaces button {
+    border-bottom: 3px solid transparent;
+    margin-bottom: 0px;
+    margin-left: 2;
+    margin-right: 2;
+    color: black;
+}
+
+#workspaces button.active {
+  background-color: cyan;
+}
+
+#workspaces button.urgent {
+    border-color: #c9545d;
+    color: #c9545d;
 }

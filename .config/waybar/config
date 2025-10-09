@@ -1,91 +1,275 @@
+// Global 
 {
-  "margin-top" : 5,
-    "margin-left": 10,
-    "margin-right": 10,
-    "height" : 30,
+  "layer": "top",
+  "position": "top",
+    // "margin": 5,
+
+    // If height property would be not present, it'd be calculated dynamically
+    "height": 6,
+    "reload_style_on_change": true,
+
     "modules-left": [
-      "hyprland/window"
-    ],
-    "modules-center": [
+      // "custom/launcher",
       "hyprland/workspaces",
+      "custom/media",
+      "hyprland/window",
+      "custom/updates"
     ],
+
+    "modules-center": [
+      "clock",
+      "custom/weather",
+    ],
+
     "modules-right": [
-    "pulseaudio",
-    "network",
-    "temperature",
-    "battery",
-    "clock",
+      "tray",
+      // "idle_inhibitor",
+      "cpu",
+      "memory",
+      // "custom/keyboard-layout",
+      //"custom/PBPbattery",
+      // "backlight#icon",
+      // "backlight#value",
+      "pulseaudio",
+      "pulseaudio#microphone",
+      "network",
+      "battery"
     ],
-    "hyprland/window": {
-      "format": "{}",
-      "max-length": 35,
-      "rewrite": {
-        "": "Yogi"
-      },
-      "separate-outputs": true,
+
+    // Modules
+
+    "idle_inhibitor": {
+      "format": "{icon} ",
+      "format-icons":{
+        "activated": "",
+        "deactivated": ""
+      }
     },
-    "hyprland/workspaces": {
-      "format": "{icon}",
-      "on-click": "activate",
-      "format-icons": {
-        "active": " ",
-      },
-      "sort-by-number": true,
-      "persistent-workspaces": {
-        "*": 4, // 5 workspaces by default on every monitor
-        "HDMI-A-1": 3 // but only three on HDMI-A-1
-      },
-    },
-    "clock": {
-      "tooltip-format": "<big>{:%Y %B}</big>\n<tt><small>{calendar}</small></tt>",
-      "format-alt": "{:%Y-%m-%d}"
-    },
-    "cpu": {
-      "format": "  {usage}%",
-      "tooltip": false
-    },
-    "memory": {
-      "format": "{}%  "
-    },
-    "temperature": {
-      "critical-threshold": 80,
-      "format": "{icon} {temperatureC}°C",
-      "format-icons": ["", "", ""]
-    },
+
     "battery": {
       "states": {
-        "warning": 30,
-        "critical": 15
+            // "good": 95,
+            "warning": 20,
+            "critical": 10
       },
-      "format": "{icon}  {capacity}%",
-      "format-full": "{icon}  {capacity}%",
-      "format-charging": "  {capacity}%",
-      "format-plugged": "  {capacity}%",
-      "format-alt": "{time} {icon}",
-      "format-icons": ["", "", "", "", ""]
+      "format": "{capacity}% {icon} ",
+      "format-charging": "{capacity}% 󰂄",
+      "format-plugged": "{capacity}% ",
+        // "format-good": "", // An empty format will hide the module
+        // "format-full": "",
+        "format-icons": ["", "", "", "", ""]
+        // "on-click": "kitty -e auto-cpufreq --stats"
     },
+
+    "custom/PBPbattery": {
+      "exec": "~/.config/waybar/scripts/PBPbattery.sh",
+      "format": "{}"
+    },
+
+    "clock": {
+      "interval": 10,
+      "format-alt": " {:%e %b %Y}", // Icon: calendar-alt
+      "format": "{:%H:%M} ",
+      "tooltip-format": "{:%e %B %Y}"
+    },
+
+    "cpu": {
+      "interval": 5,
+      "format": "  {usage}%",  // Icon: microchip
+      "states": {
+        "warning": 70,
+        "critical": 90
+      },
+      "on-click": "kitty -e 'btop'"
+    },
+
+    "custom/keyboard-layout": {
+      "exec": "swaymsg -t get_inputs | grep -m1 'xkb_active_layout_name' | cut -d '\"' -f4",
+        // Interval set only as a fallback, as the value is updated by signal
+        "interval": 30,
+        "format": "  {}", // Icon: keyboard
+        // Signal sent by Sway key binding (~/.config/sway/key-bindings)
+        "signal": 1, // SIGHUP
+        "tooltip": false,
+        "on-click": "~/.config/waybar/scripts/keyhint.sh",
+    },
+    "custom/updates": {
+      "format": "{}",
+      "interval": 10800,
+      "exec": "~/.config/waybar/scripts/updatecheck",
+      "on-click": "kitty -e yay",
+      "return-type": "json",
+      "exec-if": "exit 0",
+      "signal": 8
+    },
+    "memory": {
+      "interval": 5,
+      "format": "  {}%", // Icon: memory
+      "on-click": "btop", 
+      "states": {
+        "warning": 70,
+        "critical": 90
+      }
+    },
+
     "network": {
-      "format-wifi": "  {signalStrength}%",
-      "format-ethernet": "{cidr} ",
-      "tooltip-format": "{ifname} via {gwaddr} ",
-      "format-linked": "{ifname} (No IP) ",
-      "format-disconnected": " ⚠ ",
-      "format-alt": "{ifname}: {ipaddr}/{cidr}"
+      "interval": 5,
+      "format-wifi": "", // Icon: wifi
+      "format-ethernet": "", // Icon: ethernet
+      "format-disconnected": "⚠  Disconnected",
+      "tooltip-format": "{ifname}: {ipaddr}",
+      "on-click": "kitty -e 'nmtui'",
     },
+    "network#vpn": {
+      "interface": "tailscale0",
+      "format": " ",
+      "format-disconnected": "⚠  Disconnected",
+      "tooltip-format": "{ifname}: {ipaddr}/{cidr}",
+    },
+
+    "hyprland/mode": {
+      "format": "{}",
+      "tooltip": false
+    },
+
+    "hyprland/window": {
+      "format": "{}",
+      "max-length": 120
+    },
+
+  "hyprland/workspaces": {
+    "disable-scroll": true,
+    "disable-markup" : false,
+    "all-outputs": true,
+    "format": "{name}",
+    //"format":"{name}:{icon}",
+    "format-icons": {
+      "1": "󰅬",
+      "2": "",
+      "3": "",
+      "4": "",
+      // "5": "󰡨",
+      // "6": "",
+      // "7": "",
+      "10": ""
+    }
+  },
+
+  "custom/tailscale" : {
+    "exec": "~/.config/waybar/scripts/tailscale.sh --status",
+    "on-click": "~/.config/waybar/scripts/tailscale.sh --toggle",
+    "exec-on-event": true,
+    "format": "Tailscale {icon}",
+    "format-icons": {
+      "connected": "on",        
+      "stopped": "off"
+    },
+    "tooltip": true,
+    "return-type": "json",
+    "interval": 3,
+  },
+
     "pulseaudio": {
-      "format": "{icon}  {volume}%",
-      "format-bluetooth": "{volume}% {icon} {format_source}",
-      "format-bluetooth-muted": " {icon} {format_source}",
-      "format-muted": "",
+      "scroll-step": 1, // %, can be a float
+      "format": "{icon} {volume}%",
+      "format-bluetooth": "{volume}% {icon}  {format_source}",
+      "format-bluetooth-muted": " {icon}  {format_source}",
+      "format-muted": "󰸈",
       "format-icons": {
-        "headphone": "",
-        "hands-free": "",
-        "headset": "",
+        "headphone": "󰋋",
+        "hands-free": "וֹ",
+        "headset": "  ",
         "phone": "",
         "portable": "",
         "car": "",
-        "default": ["", "", ""]
+        "default": [""]
       },
-      "on-click": "pavucontrol"
+      "on-click": "pactl set-sink-mute @DEFAULT_SINK@ toggle",
+      "on-click-right": "pavucontrol",
+      "on-scroll-up": "pactl set-sink-volume @DEFAULT_SINK@ +2%",
+      "on-scroll-down": "pactl set-sink-volume @DEFAULT_SINK@ -2%",
     },
+
+    "pulseaudio#microphone": {
+      "format": "{format_source}",
+      "format-source": " {volume}%",
+      "format-source-muted": " ",
+      "on-click": "pamixer --default-source -t",
+      "on-click-right": "pavucontrol",
+      "on-scroll-up": "pamixer --default-source -i 5",
+      "on-scroll-down": "pamixer --default-source -d 5",
+      "scroll-step": 5
+    },
+
+    // to use the weather module replace <your_location> with your city or town
+    // note: do not use spaces: new york would be newyork
+    "custom/weather": {
+      "exec": "~/.config/waybar/scripts/weather.sh london", 
+      "return-type": "json",
+      "interval": 1000
+    },
+
+    "custom/ping": {
+      "exec": "/bin/python3 ~/.config/waybar/scripts/ping_module.py",
+      "interval":2
+    },
+    "tray": {
+      "icon-size": 18,
+      "spacing":10
+    },
+
+    "backlight#icon": {
+      "format": "{icon}",
+      "format-icons": [""],
+      "on-scroll-down": "brightnessctl -c backlight set 1%-",
+      "on-scroll-up": "brightnessctl -c backlight set +1%"
+    },
+
+    "backlight#value" :{
+      "format": "{percent}%",
+      "on-scroll-down": "brightnessctl -c backlight set 1%-",
+      "on-scroll-up": "brightnessctl -c backlight set +1%"
+    },
+
+    "custom/firefox": {
+      "format": " ",
+      "on-click": "exec vivaldi",
+      "tooltip": false
+    },
+
+    "custom/terminal": {
+      "format": " ",
+      "on-click": "exec kitty",
+      "tooltip": false
+    },
+
+    "custom/files": {
+      "format": " ",
+      "on-click": "exec nautilus",
+      "tooltip": false
+    },
+
+    "custom/launcher": {
+      "format":" ",
+      "on-click": "exec wofi -c ~/.config/wofi/config -I",
+      "tooltip": false,
+    },
+
+    "custom/power": {
+      "format":"⏻",
+      "on-click": "exec ~/.config/waybar/scripts/power-menu.sh",
+      "tooltip": false,
+    },
+
+    "custom/media": {
+      "format": "{icon} {}",
+      "return-type": "json",
+      "max-length": 20,
+      "format-icons": {
+        "spotify": "",
+        "default": "󰗃"
+      },
+      "escape": true,
+      "exec": "/usr/bin/python3 $HOME/.config/waybar/scripts/mediaplayer.py 2> /dev/null" // Script in resources folder
+    }
 }
