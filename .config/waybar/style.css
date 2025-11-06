@@ -31,12 +31,12 @@
     color: white;
     background-color: black;
    /*  font-weight: bold; */
+    font-family: "Geist Mono", "Symbols Nerd Font", "Font Awesome 6 Free", sans-serif;
+    font-size: 12px
 }
 
 
 window#waybar {
-  font-family: MesloLGMDZ Mono Nerd Font;
-  font-size: 14px;
 }
 
 /* Every modules */
