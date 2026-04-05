@@ -31,3 +31,4 @@ if vim.fn.has('clipboard') == 1 then
     cache_enabled = 1,
   }
 end
+
