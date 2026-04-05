@@ -1,90 +1,5 @@
--- Track background jobs (shared across the config)
+-- Track background jobs
 local typst_jobs = {}
-
------------------------------------------------------------------
--- Cursor-following sync: Neovim cursor → Zathura page (D-Bus)
--- Typst has no SyncTeX, so we approximate the page from the
--- line-position ratio and use Zathura's D-Bus GotoPage API.
------------------------------------------------------------------
-local sync_timer = nil
-local page_cache = {} -- pdf_path → { pages = N, mtime = last_modified }
-
---- Refocus Neovim after D-Bus touches Zathura (Hyprland/Wayland)
-local function refocus_neovim()
-  vim.system({ "hyprctl", "dispatch", "focuswindow", "pid:" .. vim.fn.getpid() })
-end
-
---- Get total page count of a PDF (cached, refreshes when file changes)
-local function get_pdf_pages(pdf_path)
-  local stat = vim.uv.fs_stat(pdf_path)
-  if not stat then return nil end
-
-  local cached = page_cache[pdf_path]
-  if cached and cached.mtime == stat.mtime.sec then
-    return cached.pages
-  end
-
-  local out = vim.fn.system("pdfinfo " .. vim.fn.shellescape(pdf_path) .. " 2>/dev/null")
-  local pages = tonumber(out:match("Pages:%s*(%d+)"))
-  if pages and pages > 0 then
-    page_cache[pdf_path] = { pages = pages, mtime = stat.mtime.sec }
-    return pages
-  end
-  return nil
-end
-
---- Send D-Bus GotoPage to the tracked Zathura instance
-local function sync_cursor_to_zathura()
-  local file = vim.fn.expand("%:p")
-  local jobs = typst_jobs[file]
-  if not jobs or not jobs.zathura then return end
-
-  -- Get Zathura PID for D-Bus addressing
-  local ok, pid = pcall(vim.fn.jobpid, jobs.zathura)
-  if not ok or not pid then return end
-
-  local pdf = vim.fn.expand("%:p:r") .. ".pdf"
-  local total_pages = get_pdf_pages(pdf)
-  if not total_pages or total_pages <= 1 then return end
-
-  local cur_line   = vim.fn.line(".")
-  local total_lines = vim.fn.line("$")
-
-  -- Map line ratio → page (0-indexed for D-Bus)
-  local page = math.floor(((cur_line - 1) / total_lines) * total_pages)
-  page = math.max(0, math.min(total_pages - 1, page))
-
-  -- Skip if we're already on this page
-  if jobs.last_page == page then return end
-  jobs.last_page = page
-
-  -- D-Bus GotoPage, then immediately refocus Neovim
-  vim.system({
-    "dbus-send", "--session", "--type=method_call",
-    string.format("--dest=org.pwmt.zathura.PID-%d", pid),
-    "/org/pwmt/zathura",
-    "org.pwmt.zathura.GotoPage",
-    string.format("uint32:%d", page),
-  }, {}, function()
-    vim.schedule(refocus_neovim)
-  end)
-end
-
---- Debounced wrapper (250 ms after cursor stops)
-local function schedule_sync()
-  if sync_timer then
-    sync_timer:stop()
-    sync_timer:close()
-  end
-  sync_timer = vim.uv.new_timer()
-  sync_timer:start(250, 0, vim.schedule_wrap(function()
-    sync_cursor_to_zathura()
-    if sync_timer then
-      sync_timer:close()
-      sync_timer = nil
-    end
-  end))
-end
 
 return {
   'chomosuke/typst-preview.nvim',
@@ -134,25 +49,9 @@ return {
     end))
 
     -----------------------------------------------------------------
-    -- Cursor-following autocmd (only fires when TypstPDF is active)
-    -----------------------------------------------------------------
-    vim.api.nvim_create_augroup("TypstZathuraSync", { clear = true })
-    vim.api.nvim_create_autocmd({ "CursorMoved", "CursorMovedI" }, {
-      group = "TypstZathuraSync",
-      pattern = "*.typ",
-      callback = function()
-        local file = vim.fn.expand("%:p")
-        if typst_jobs[file] and typst_jobs[file].zathura then
-          schedule_sync()
-        end
-      end,
-    })
-
-    -----------------------------------------------------------------
     -- :TypstPDF  –  live-compile and preview in Zathura
     --   • starts `typst watch <file>` in the background
     --   • opens Zathura on the output PDF (Zathura auto-reloads)
-    --   • cursor movement auto-scrolls Zathura to the right page
     -----------------------------------------------------------------
     vim.api.nvim_create_user_command("TypstPDF", function()
       local file = vim.fn.expand("%:p")
@@ -182,7 +81,7 @@ return {
       typst_jobs[file] = { watch = watch_id }
       vim.notify("Typst → Zathura: watching " .. vim.fn.expand("%:t"))
 
-      -- Wait for initial compile, open Zathura, then refocus Neovim
+      -- Wait for initial compile, then open Zathura
       vim.defer_fn(function()
         local zathura_id = vim.fn.jobstart({ "zathura", pdf }, {
           on_exit = function()
@@ -193,10 +92,8 @@ return {
           end,
         })
         typst_jobs[file].zathura = zathura_id
-        -- Refocus Neovim after Zathura window appears
-        vim.defer_fn(refocus_neovim, 600)
       end, 500)
-    end, { desc = "Compile Typst to PDF and preview in Zathura (with cursor follow)" })
+    end, { desc = "Compile Typst to PDF and preview in Zathura" })
 
     -----------------------------------------------------------------
     -- :TypstPDFStop  –  stop watching and close Zathura
