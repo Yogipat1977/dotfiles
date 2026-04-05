@@ -10,6 +10,8 @@ return {
   end,
   config = function()
     require('typst-preview').setup({
+      -- Open preview in a dedicated Chromium app window (not a tab)
+      open_cmd = 'chromium --new-window --app=%s --class=typst-preview',
       -- This function ensures that even when you are in /chapters/01_intro.typ,
       -- the previewer knows to render the whole project starting from main.typ
       get_root_file = function()
