@@ -9,6 +9,11 @@ local typst_jobs = {}
 local sync_timer = nil
 local page_cache = {} -- pdf_path → { pages = N, mtime = last_modified }
 
+--- Refocus Neovim after D-Bus touches Zathura (Hyprland/Wayland)
+local function refocus_neovim()
+  vim.system({ "hyprctl", "dispatch", "focuswindow", "pid:" .. vim.fn.getpid() })
+end
+
 --- Get total page count of a PDF (cached, refreshes when file changes)
 local function get_pdf_pages(pdf_path)
   local stat = vim.uv.fs_stat(pdf_path)
@@ -53,15 +58,16 @@ local function sync_cursor_to_zathura()
   if jobs.last_page == page then return end
   jobs.last_page = page
 
-  -- Fire-and-forget D-Bus call
-  vim.fn.jobstart({
-    "dbus-send",
-    "--type=method_call",
+  -- D-Bus GotoPage, then immediately refocus Neovim
+  vim.system({
+    "dbus-send", "--session", "--type=method_call",
     string.format("--dest=org.pwmt.zathura.PID-%d", pid),
     "/org/pwmt/zathura",
     "org.pwmt.zathura.GotoPage",
     string.format("uint32:%d", page),
-  }, { detach = true })
+  }, {}, function()
+    vim.schedule(refocus_neovim)
+  end)
 end
 
 --- Debounced wrapper (250 ms after cursor stops)
@@ -100,14 +106,32 @@ return {
     })
 
     -----------------------------------------------------------------
-    -- Auto-save .typ files on every text change (no :w needed)
+    -- Auto-save .typ files (event-driven + fallback timer)
     -----------------------------------------------------------------
-    vim.api.nvim_create_autocmd({ "TextChanged", "TextChangedI" }, {
+    -- Primary: save on text change and when leaving insert mode
+    vim.api.nvim_create_autocmd({ "TextChanged", "TextChangedI", "InsertLeave" }, {
       pattern = "*.typ",
       callback = function()
-        vim.cmd("silent! update")
+        if vim.bo.modified then
+          vim.cmd("silent! update")
+        end
       end,
     })
+
+    -- Fallback: 1-second timer catches any missed saves
+    local autosave_timer = vim.uv.new_timer()
+    autosave_timer:start(1000, 1000, vim.schedule_wrap(function()
+      for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+        if vim.api.nvim_buf_is_valid(buf)
+          and vim.bo[buf].buftype == ""
+          and vim.api.nvim_buf_get_name(buf):match("%.typ$")
+          and vim.bo[buf].modified then
+          vim.api.nvim_buf_call(buf, function()
+            vim.cmd("silent! update")
+          end)
+        end
+      end
+    end))
 
     -----------------------------------------------------------------
     -- Cursor-following autocmd (only fires when TypstPDF is active)
@@ -158,7 +182,7 @@ return {
       typst_jobs[file] = { watch = watch_id }
       vim.notify("Typst → Zathura: watching " .. vim.fn.expand("%:t"))
 
-      -- Wait briefly for the initial compile, then open Zathura
+      -- Wait for initial compile, open Zathura, then refocus Neovim
       vim.defer_fn(function()
         local zathura_id = vim.fn.jobstart({ "zathura", pdf }, {
           on_exit = function()
@@ -169,6 +193,8 @@ return {
           end,
         })
         typst_jobs[file].zathura = zathura_id
+        -- Refocus Neovim after Zathura window appears
+        vim.defer_fn(refocus_neovim, 600)
       end, 500)
     end, { desc = "Compile Typst to PDF and preview in Zathura (with cursor follow)" })
 
@@ -190,10 +216,14 @@ return {
     end, { desc = "Stop Typst watcher and close Zathura" })
 
     -----------------------------------------------------------------
-    -- Cleanup all jobs when Neovim exits
+    -- Cleanup all jobs + timers when Neovim exits
     -----------------------------------------------------------------
     vim.api.nvim_create_autocmd("VimLeavePre", {
       callback = function()
+        if autosave_timer then
+          autosave_timer:stop()
+          autosave_timer:close()
+        end
         for _, jobs in pairs(typst_jobs) do
           pcall(vim.fn.jobstop, jobs.watch)
           if jobs.zathura then
