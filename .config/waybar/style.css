@@ -1,23 +1,24 @@
+@import "../../.cache/wal/colors-waybar.css";
 
 @keyframes blink-warning {
     70% {
-        color: white;
+        color: @foreground;
     }
 
     to {
-        color: white;
-        background-color: orange;
+        color: @foreground;
+        background-color: @color3;
     }
 }
 
 @keyframes blink-critical {
     70% {
-      color: white;
+      color: @foreground;
     }
 
     to {
-        color: white;
-        background-color: red;
+        color: @foreground;
+        background-color: @color1;
     }
 }
 
@@ -28,8 +29,8 @@
     min-height: 0;
     margin: 0px;
     padding: 0;
-    color: white;
-    background-color: black;
+    color: @foreground;
+    background-color: @background;
    /*  font-weight: bold; */
     font-family: "Geist Mono", "Symbols Nerd Font", "Font Awesome 6 Free", sans-serif;
     font-size: 12px
@@ -119,7 +120,7 @@ window#waybar {
 
 #workspaces {
     font-size:18px;
-    background-color: rgba(0,0,0,0.8);
+    background-color: alpha(@background, 0.8);
     border-radius: 20px;
 }
 
@@ -128,14 +129,15 @@ window#waybar {
     margin-bottom: 0px;
     margin-left: 2;
     margin-right: 2;
-    color: black;
+    color: @foreground;
 }
 
 #workspaces button.active {
-  background-color: cyan;
+  background-color: @color4;
+  color: @background;
 }
 
 #workspaces button.urgent {
-    border-color: #c9545d;
-    color: #c9545d;
+    border-color: @color1;
+    color: @color1;
 }
